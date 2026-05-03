@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, TextInput, Alert, Platform, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, ActivityIndicator, FlatList, TextInput, Alert, Platform, Modal, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -274,10 +274,17 @@ export default function RecipeDetailScreen({ route, navigation }) {
   if (!recipe) return <View style={styles.centered}><Text>Recipe not found</Text></View>;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
       <Modal visible={mealModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <KeyboardAvoidingView
+            style={styles.modalContent}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
             <Text style={styles.modalTitle}>Add to Meal Plan</Text>
             
             <RequiredLabel label="Day" />
@@ -311,13 +318,16 @@ export default function RecipeDetailScreen({ route, navigation }) {
                 <Text style={styles.btnText}>Save</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <KeyboardAvoidingView
+            style={styles.modalContent}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
             <Text style={styles.modalTitle}>Edit Review</Text>
             
             <RequiredLabel label="Your Rating (1-5)" />
@@ -346,7 +356,7 @@ export default function RecipeDetailScreen({ route, navigation }) {
                 <Text style={styles.btnText}>Update</Text>
               </TouchableOpacity>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -354,7 +364,11 @@ export default function RecipeDetailScreen({ route, navigation }) {
         <Ionicons name="arrow-back" size={24} color="#fff" />
       </TouchableOpacity>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 140 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         <Image source={{ uri: recipe.photo }} style={styles.image} />
         
         <View style={styles.headerRow}>
@@ -450,7 +464,7 @@ export default function RecipeDetailScreen({ route, navigation }) {
         ))}
         
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
