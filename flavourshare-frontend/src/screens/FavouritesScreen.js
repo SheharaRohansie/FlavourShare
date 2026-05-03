@@ -38,7 +38,7 @@ export default function FavouritesScreen({ navigation }) {
   const removeSaved = async (id) => {
     try {
       await axios.delete(`${API_BASE_URL}/api/saved/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      fetchData();
+      await fetchData();
     } catch (err) {
       console.log(err);
     }
