@@ -2,6 +2,7 @@ const SavedCollection = require('../models/SavedCollection');
 const SavedRecipe = require('../models/SavedRecipe');
 const asyncHandler = require('../middleware/asyncHandler');
 const { getUploadedFileUrl, getUploadedFilePublicId } = require('../utils/fileUrl');
+const mongoose = require('mongoose');
 
 const getCollections = asyncHandler(async (req, res) => {
   const collections = await SavedCollection.find({ userId: req.user._id }).sort({ createdAt: -1 });
@@ -55,13 +56,20 @@ const updateCollection = asyncHandler(async (req, res) => {
 });
 
 const deleteCollection = asyncHandler(async (req, res) => {
-  const deleted = await SavedCollection.findOneAndDelete({ _id: req.params.id, userId: req.user._id });
-  if (!deleted) {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    res.status(400);
+    throw new Error('Invalid collection id');
+  }
+
+  const collection = await SavedCollection.findOne({ _id: req.params.id, userId: req.user._id });
+  if (!collection) {
     res.status(404);
     throw new Error('Collection not found');
   }
 
-  await SavedRecipe.deleteMany({ collectionId: req.params.id });
+  await SavedRecipe.deleteMany({ collectionId: collection._id, userId: req.user._id });
+  await collection.deleteOne();
+
   res.json({ message: 'Collection deleted' });
 });
 
