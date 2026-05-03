@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Modal, TextInput, Platform, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator, Modal, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
@@ -22,6 +22,8 @@ export default function CollectionDetailScreen({ route, navigation }) {
   const [editNote, setEditNote] = useState('');
   const [editImageUri, setEditImageUri] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deletingRecipeId, setDeletingRecipeId] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -110,24 +112,34 @@ export default function CollectionDetailScreen({ route, navigation }) {
   };
 
   const deleteCollection = () => {
-    showConfirm('Delete Collection', 'Are you sure? All saved recipes inside will be unbookmarked.', async () => {
-      setEditModalVisible(false); // Close edit modal before deleting to prevent UI glitches
-      try {
-        await axios.delete(`${API_BASE_URL}/api/collections/${collectionId}`, { headers: { Authorization: `Bearer ${token}` } });
-        navigation.goBack();
-        showAlert('Success', 'Collection deleted', 'success');
-      } catch (err) {
-        showAlert('Error', 'Failed to delete', 'error');
-      }
-    });
+    setEditModalVisible(false);
+
+    setTimeout(() => {
+      showConfirm('Delete Collection', 'Are you sure? All saved recipes inside will be unbookmarked.', async () => {
+        setDeleting(true);
+        try {
+          await axios.delete(`${API_BASE_URL}/api/collections/${collectionId}`, { headers: { Authorization: `Bearer ${token}` } });
+          setDeleting(false);
+          showAlert('Success', 'Collection deleted', 'success');
+          navigation.goBack();
+        } catch (err) {
+          console.log(err);
+          setDeleting(false);
+          showAlert('Error', 'Failed to delete', 'error');
+        }
+      });
+    }, 250);
   };
 
   const removeRecipe = async (id) => {
+    setDeletingRecipeId(id);
     try {
       await axios.delete(`${API_BASE_URL}/api/saved/${id}`, { headers: { Authorization: `Bearer ${token}` } });
-      setRecipes(recipes.filter(r => r._id !== id));
+      await fetchData();
     } catch (err) {
       console.log(err);
+    } finally {
+      setDeletingRecipeId(null);
     }
   };
 
@@ -145,15 +157,20 @@ export default function CollectionDetailScreen({ route, navigation }) {
           </View>
         </TouchableOpacity>
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.actionBtn} onPress={() => removeRecipe(item._id)}>
-            <Ionicons name="trash" size={20} color="#e74c3c" />
+          <TouchableOpacity style={styles.actionBtn} onPress={() => removeRecipe(item._id)} disabled={deletingRecipeId !== null}>
+            {deletingRecipeId === item._id ? (
+              <ActivityIndicator size="small" color="#e74c3c" />
+            ) : (
+              <Ionicons name="trash" size={20} color="#e74c3c" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
     );
   };
 
-  if (loading || !collection) return <View style={styles.centered}><ActivityIndicator size="large" color="#e67e22" /></View>;
+  if (loading) return <View style={styles.centered}><ActivityIndicator size="large" color="#e67e22" /></View>;
+  if (!collection) return <View style={styles.centered}><Text style={styles.emptyText}>Collection not found.</Text></View>;
 
   return (
     <View style={styles.container}>
@@ -196,7 +213,10 @@ export default function CollectionDetailScreen({ route, navigation }) {
       {/* Edit Modal */}
       <Modal visible={editModalVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <KeyboardAvoidingView
+            style={styles.modalContent}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
             <Text style={styles.modalTitle}>Edit Collection</Text>
             
             <Text style={styles.label}>Name</Text>
@@ -211,9 +231,9 @@ export default function CollectionDetailScreen({ route, navigation }) {
             </TouchableOpacity>
             {editImageUri && <Image source={{ uri: editImageUri }} style={styles.previewImage} />}
 
-            <TouchableOpacity style={{flexDirection: 'row', alignItems: 'center', alignSelf: 'center', marginBottom: 20}} onPress={deleteCollection}>
-               <Ionicons name="trash-outline" size={20} color="#e74c3c" />
-               <Text style={{color: '#e74c3c', marginLeft: 5, fontWeight: 'bold'}}>Delete Collection</Text>
+            <TouchableOpacity style={{flexDirection: 'row', alignItems: 'center', alignSelf: 'center', marginBottom: 20}} onPress={deleteCollection} disabled={deleting}>
+              {deleting ? <ActivityIndicator size="small" color="#e74c3c" /> : <Ionicons name="trash-outline" size={20} color="#e74c3c" />}
+              <Text style={{color: '#e74c3c', marginLeft: 5, fontWeight: 'bold'}}>{deleting ? 'Deleting...' : 'Delete Collection'}</Text>
             </TouchableOpacity>
 
             <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
@@ -224,7 +244,7 @@ export default function CollectionDetailScreen({ route, navigation }) {
                 {saving ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Save</Text>}
               </TouchableOpacity>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
@@ -266,5 +286,3 @@ const styles = StyleSheet.create({
   btn: { backgroundColor: '#e67e22', padding: 12, borderRadius: 8, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });
-
-
