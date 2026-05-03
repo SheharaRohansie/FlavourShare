@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, ScrollView, Platform
+  StyleSheet, Alert, ActivityIndicator, ScrollView, Platform, KeyboardAvoidingView
 } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -46,7 +46,15 @@ export default function EditProfileScreen({ navigation }) {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="interactive"
+    >
       <Text style={styles.title}>🍽️ FlavourShare</Text>
       <Text style={styles.subtitle}>Edit Profile</Text>
 
@@ -101,10 +109,12 @@ export default function EditProfileScreen({ navigation }) {
         <Text style={styles.cancelText}>Cancel</Text>
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1, backgroundColor: '#fff' },
   container: { flexGrow: 1, padding: 24, backgroundColor: '#fff', justifyContent: 'center' },
   title: { fontSize: 32, fontWeight: 'bold', textAlign: 'center', color: '#e67e22', marginBottom: 8 },
   subtitle: { fontSize: 20, textAlign: 'center', marginBottom: 24, color: '#333' },
