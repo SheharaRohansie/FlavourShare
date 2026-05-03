@@ -1,4 +1,5 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,6 +27,48 @@ import SaveRecipeScreen from '../screens/SaveRecipeScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+
+function LandingSplash() {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.94)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 700,
+        useNativeDriver: true
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 7,
+        tension: 70,
+        useNativeDriver: true
+      })
+    ]).start();
+  }, [fadeAnim, scaleAnim]);
+
+  return (
+    <View style={styles.splashContainer}>
+      <Animated.View
+        style={[
+          styles.splashContent,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: scaleAnim }]
+          }
+        ]}
+      >
+        <View style={styles.splashLogo}>
+          <Ionicons name="restaurant" size={44} color="#fff" />
+        </View>
+        <Text style={styles.splashTitle}>FlavourShare</Text>
+        <Text style={styles.splashSubtitle}>Plan, cook, save, and share your favourites.</Text>
+        <ActivityIndicator color="#e67e22" style={styles.splashLoader} />
+      </Animated.View>
+    </View>
+  );
+}
 
 function ProfileStackScreen() {
   return (
@@ -114,7 +157,21 @@ function MainTabs() {
 }
 
 function AppNavigator() {
-  const { user } = useContext(AuthContext);
+  const { user, loading } = useContext(AuthContext);
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (showSplash || loading) {
+    return <LandingSplash />;
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {user ? (
@@ -138,3 +195,47 @@ export default function App() {
     </ModalProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  splashContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff8f1',
+    paddingHorizontal: 32
+  },
+  splashContent: {
+    alignItems: 'center'
+  },
+  splashLogo: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e67e22',
+    shadowColor: '#e67e22',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 18,
+    elevation: 8,
+    marginBottom: 24
+  },
+  splashTitle: {
+    fontSize: 38,
+    fontWeight: '800',
+    color: '#2f2a24',
+    textAlign: 'center'
+  },
+  splashSubtitle: {
+    fontSize: 15,
+    color: '#6f6257',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 10,
+    maxWidth: 300
+  },
+  splashLoader: {
+    marginTop: 28
+  }
+});
