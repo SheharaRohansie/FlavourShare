@@ -19,7 +19,7 @@ app.use('/api/categories', require('./routes/categories'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/reviews', require('./routes/reviews'));
 app.use('/api/saved', require('./routes/savedRecipes'));
-app.use('/api/collections', require('./routes/savedCollections'));
+app.use('/api/collections', require('./routes/savedCollectionsLive'));
 app.use('/api/mealplans', require('./routes/mealPlans'));
 app.use('/api/shoppingLists', require('./routes/shoppingLists'));
 app.get('/', (req, res) => res.send('FlavourShare API Running ✅'));
