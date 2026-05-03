@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, FlatList, Alert, Platform, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, FlatList, Alert, Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native';
 import axios from 'axios';
 import * as ImagePicker from 'expo-image-picker';
 import { AuthContext } from '../context/AuthContext';
@@ -180,7 +180,11 @@ export default function ManageCategoriesScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
       <Text style={styles.headerTitle}>Manage Categories</Text>
       
       <View style={styles.form}>
@@ -227,9 +231,11 @@ export default function ManageCategoriesScreen() {
           renderItem={renderCategory}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
         />
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -263,5 +269,4 @@ const styles = StyleSheet.create({
   deleteBtn: { backgroundColor: '#dc3545', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 6 },
   btnText: { color: '#fff', fontSize: 12, fontWeight: 'bold' }
 });
-
 
