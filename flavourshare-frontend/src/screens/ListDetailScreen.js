@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, TextInput, ActivityIndicator, Alert, Platform, KeyboardAvoidingView } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ModalContext } from '../context/ModalContext';
@@ -105,7 +105,11 @@ export default function ListDetailScreen({ route, navigation }) {
   if (!list) return <View style={styles.centered}><Text>List not found</Text></View>;
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{paddingRight: 15}}>
           <Ionicons name="arrow-back" size={24} color="#333" />
@@ -125,7 +129,9 @@ export default function ListDetailScreen({ route, navigation }) {
         data={list.items}
         keyExtractor={(item, index) => item._id || index.toString()}
         renderItem={renderItem}
-        contentContainerStyle={{ padding: 20, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       />
 
       <View style={styles.quickAddContainer}>
@@ -146,7 +152,7 @@ export default function ListDetailScreen({ route, navigation }) {
           <Ionicons name="add" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
