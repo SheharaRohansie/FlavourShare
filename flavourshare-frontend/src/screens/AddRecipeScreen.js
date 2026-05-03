@@ -232,6 +232,7 @@ export default function AddRecipeScreen({ navigation }) {
       } else {
         setCategoryIds([]);
       }
+      navigation.navigate('Home', { screen: 'HomeScreen' });
     } catch (err) {
       const msg = err.response?.data?.message || 'Failed to publish recipe';
       showAlert('Error', msg, 'error');
