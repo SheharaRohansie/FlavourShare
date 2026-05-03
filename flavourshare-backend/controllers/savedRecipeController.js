@@ -1,5 +1,8 @@
 const SavedRecipe = require('../models/SavedRecipe');
+const SavedCollection = require('../models/SavedCollection');
+const Recipe = require('../models/Recipe');
 const asyncHandler = require('../middleware/asyncHandler');
+const mongoose = require('mongoose');
 
 const getSavedRecipes = asyncHandler(async (req, res) => {
   const query = { userId: req.user._id };
@@ -38,6 +41,28 @@ const createSavedRecipe = asyncHandler(async (req, res) => {
     res.status(400);
     throw new Error('collectionId is required');
   }
+  if (!mongoose.Types.ObjectId.isValid(recipeId)) {
+    res.status(400);
+    throw new Error('Invalid recipe id');
+  }
+  if (!mongoose.Types.ObjectId.isValid(collectionId)) {
+    res.status(400);
+    throw new Error('Invalid collection id');
+  }
+
+  const [recipe, collection] = await Promise.all([
+    Recipe.findById(recipeId).select('_id'),
+    SavedCollection.findOne({ _id: collectionId, userId: req.user._id }).select('_id')
+  ]);
+
+  if (!recipe) {
+    res.status(404);
+    throw new Error('Recipe not found');
+  }
+  if (!collection) {
+    res.status(404);
+    throw new Error('Collection not found');
+  }
 
   const existing = await SavedRecipe.findOne({ userId: req.user._id, recipeId, collectionId });
   if (existing) {
@@ -45,12 +70,21 @@ const createSavedRecipe = asyncHandler(async (req, res) => {
     throw new Error('Recipe already saved in this collection');
   }
 
-  const saved = await SavedRecipe.create({
-    userId: req.user._id,
-    recipeId,
-    collectionId,
-    personalNote: personalNote || ''
-  });
+  let saved;
+  try {
+    saved = await SavedRecipe.create({
+      userId: req.user._id,
+      recipeId,
+      collectionId,
+      personalNote: personalNote || ''
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      res.status(400);
+      throw new Error('Recipe already saved in this collection');
+    }
+    throw err;
+  }
 
   res.status(201).json(saved);
 });

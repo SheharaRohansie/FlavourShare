@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, TextInput, Platform, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Image, TextInput, Platform, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ModalContext } from '../context/ModalContext';
 import { API_BASE_URL } from '../constants/api';
+
+const REQUEST_TIMEOUT = 15000;
 
 export default function SaveRecipeScreen({ route, navigation }) {
   const { recipeId } = route.params;
@@ -31,7 +33,8 @@ export default function SaveRecipeScreen({ route, navigation }) {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/collections`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: REQUEST_TIMEOUT
       });
       setCollections(res.data);
     } catch (err) {
@@ -88,7 +91,8 @@ export default function SaveRecipeScreen({ route, navigation }) {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
-        }
+        },
+        timeout: REQUEST_TIMEOUT
       });
 
       const newCollectionId = collRes.data._id;
@@ -103,25 +107,37 @@ export default function SaveRecipeScreen({ route, navigation }) {
   };
 
   const saveToCollection = async (collectionId) => {
+    if (!recipeId) {
+      showAlert('Error', 'Recipe id is missing', 'error');
+      return;
+    }
+
     setSavingCollectionId(collectionId);
     try {
       await axios.post(`${API_BASE_URL}/api/saved`, {
         recipeId,
         collectionId
-      }, { headers: { Authorization: `Bearer ${token}` } });
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: REQUEST_TIMEOUT
+      });
       
-      showAlert('Success', 'Recipe saved to collection!', 'success');
       navigation.goBack();
+      setTimeout(() => {
+        showAlert('Success', 'Recipe saved to collection!', 'success');
+      }, 250);
     } catch (err) {
-      const msg = err.response?.data?.message || 'Failed to save recipe';
+      const msg = err.code === 'ECONNABORTED'
+        ? 'Saving took too long. Please check your connection and try again.'
+        : err.response?.data?.message || 'Failed to save recipe';
       if (msg === 'Recipe already saved in this collection') {
         showAlert('Info', msg, 'info');
       } else {
         showAlert('Error', msg, 'error');
       }
-      setCreating(false);
     } finally {
       setSavingCollectionId(null);
+      setCreating(false);
     }
   };
 
@@ -130,7 +146,11 @@ export default function SaveRecipeScreen({ route, navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Save Recipe</Text>
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -182,7 +202,11 @@ export default function SaveRecipeScreen({ route, navigation }) {
           )}
         </View>
       ) : (
-        <ScrollView contentContainerStyle={{ padding: 20 }}>
+        <ScrollView
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="interactive"
+        >
           <TouchableOpacity style={styles.backBtn} onPress={() => setIsCreating(false)}>
             <Ionicons name="arrow-back" size={20} color="#e67e22" />
             <Text style={{color: '#e67e22', marginLeft: 5, fontWeight: 'bold'}}>Back to Collections</Text>
@@ -216,7 +240,7 @@ export default function SaveRecipeScreen({ route, navigation }) {
           </TouchableOpacity>
         </ScrollView>
       )}
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -242,5 +266,3 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: '#e67e22', padding: 15, borderRadius: 8, alignItems: 'center' },
   saveBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
 });
-
-
