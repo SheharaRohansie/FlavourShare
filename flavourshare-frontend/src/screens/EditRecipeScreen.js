@@ -1,5 +1,5 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator, Modal, KeyboardAvoidingView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
@@ -226,10 +226,17 @@ export default function EditRecipeScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
       <Modal transparent visible={categoryModalVisible} animationType="slide" onRequestClose={() => setCategoryModalVisible(false)}>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <KeyboardAvoidingView
+            style={styles.modalContent}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          >
             <Text style={styles.modalTitle}>Add Category</Text>
 
             <RequiredLabel label="Name" />
@@ -267,11 +274,16 @@ export default function EditRecipeScreen({ route, navigation }) {
                 {newCategoryLoading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Create</Text>}
               </TouchableOpacity>
             </View>
-          </View>
+          </KeyboardAvoidingView>
         </View>
       </Modal>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scroll}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         <Text style={styles.header}>Edit Recipe</Text>
         
         <TouchableOpacity style={styles.imagePicker} onPress={() => { pickImage(); setImageUriError(''); }}>
@@ -333,7 +345,7 @@ export default function EditRecipeScreen({ route, navigation }) {
         
         <View style={{height: 100}} />
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -368,5 +380,3 @@ const styles = StyleSheet.create({
   imgBtnText: { color: '#e67e22', fontWeight: 'bold' },
   preview: { width: '100%', height: 100, borderRadius: 8, marginBottom: 10, resizeMode: 'cover' }
 });
-
-
