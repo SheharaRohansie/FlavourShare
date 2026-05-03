@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Platform, ActivityIndicator } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ export default function MealPlanScreen({ navigation }) {
   const { token } = useContext(AuthContext);
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
@@ -57,19 +58,24 @@ export default function MealPlanScreen({ navigation }) {
         formData.append('banner', { uri, name: filename, type });
       }
 
-      setLoading(true);
+      setUploadingBanner(true);
       try {
         const res = await axios.post(`${API_BASE_URL}/api/mealplans/upload-banner`, formData, {
           headers: { 
             Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
-          }
+          },
+          timeout: 30000
         });
-        setPlan(res.data);
+        setPlan((currentPlan) => ({
+          ...currentPlan,
+          ...res.data,
+          slots: Array.isArray(res.data?.slots) ? res.data.slots : currentPlan?.slots || []
+        }));
       } catch (err) {
-        console.log('Error uploading banner', err);
+        console.log('Error uploading banner', err.response?.data?.message || err.message);
       } finally {
-        setLoading(false);
+        setUploadingBanner(false);
       }
     }
   };
@@ -94,9 +100,13 @@ export default function MealPlanScreen({ navigation }) {
           </View>
         )}
         <View style={styles.bannerOverlay}>
-          <Text style={styles.bannerTitle}>This Week's Plan</Text>
-          <TouchableOpacity style={styles.bannerBtn} onPress={uploadBanner}>
-            <Ionicons name="camera-outline" size={20} color="#fff" />
+          <Text style={styles.bannerTitle}>{"This Week's Plan"}</Text>
+          <TouchableOpacity style={styles.bannerBtn} onPress={uploadBanner} disabled={uploadingBanner}>
+            {uploadingBanner ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="camera-outline" size={20} color="#fff" />
+            )}
           </TouchableOpacity>
         </View>
       </View>
@@ -110,11 +120,17 @@ export default function MealPlanScreen({ navigation }) {
               return (
                 <View key={slot} style={styles.slotRow}>
                   <Text style={styles.slotTitle}>{slot}</Text>
-                  {slotRecord && slotRecord.recipe ? (
+                  {slotRecord && slotRecord.recipe && typeof slotRecord.recipe === 'object' ? (
                     <TouchableOpacity 
                       style={styles.planItem} 
                       onPress={() => navigation.navigate('PlanDetail', { slotRecord, day, slot })}>
-                      <Image source={{ uri: slotRecord.recipe.photo }} style={styles.slotThumb} />
+                      {slotRecord.recipe.photo ? (
+                        <Image source={{ uri: slotRecord.recipe.photo }} style={styles.slotThumb} />
+                      ) : (
+                        <View style={[styles.slotThumb, styles.slotThumbFallback]}>
+                          <Ionicons name="restaurant-outline" size={18} color="#999" />
+                        </View>
+                      )}
                       <View style={{flex: 1}}>
                         <Text style={styles.planRecipe} numberOfLines={1}>{slotRecord.recipe.title}</Text>
                         {slotRecord.personalNote ? <Text style={styles.planNote} numberOfLines={1}>{slotRecord.personalNote}</Text> : null}
@@ -146,7 +162,7 @@ const styles = StyleSheet.create({
   bannerImage: { width: '100%', height: '100%', resizeMode: 'cover' },
   bannerOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 15, backgroundColor: 'rgba(0,0,0,0.4)', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   bannerTitle: { color: '#fff', fontSize: 24, fontWeight: 'bold' },
-  bannerBtn: { backgroundColor: 'rgba(255,255,255,0.3)', padding: 10, borderRadius: 20 },
+  bannerBtn: { backgroundColor: 'rgba(255,255,255,0.3)', width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   scroll: { padding: 20 },
   dayCard: { backgroundColor: '#fff', borderRadius: 12, padding: 15, marginBottom: 20, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 5, elevation: 2 },
   dayTitle: { fontSize: 20, fontWeight: 'bold', color: '#e67e22', marginBottom: 15, borderBottomWidth: 1, borderBottomColor: '#eee', paddingBottom: 5 },
@@ -154,6 +170,7 @@ const styles = StyleSheet.create({
   slotTitle: { width: 80, fontSize: 14, fontWeight: 'bold', color: '#666' },
   planItem: { flex: 1, flexDirection: 'row', alignItems: 'center', backgroundColor: '#eef2f5', padding: 8, borderRadius: 8 },
   slotThumb: { width: 40, height: 40, borderRadius: 6, marginRight: 10 },
+  slotThumbFallback: { backgroundColor: '#dde3e8', alignItems: 'center', justifyContent: 'center' },
   planRecipe: { fontWeight: 'bold', color: '#333', fontSize: 14 },
   planNote: { fontSize: 12, color: '#666', marginTop: 2, fontStyle: 'italic' },
   emptySlot: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fdf3ea', borderWidth: 1, borderColor: '#f7dcc1', borderStyle: 'dashed', padding: 10, borderRadius: 8 },
