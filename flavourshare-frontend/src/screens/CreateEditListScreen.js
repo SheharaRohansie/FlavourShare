@@ -1,5 +1,5 @@
 import React, { useState, useContext } from 'react';
-import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Platform } from 'react-native';
+import { View, Text, StyleSheet, TextInput, ScrollView, TouchableOpacity, Image, ActivityIndicator, Alert, Platform, KeyboardAvoidingView } from 'react-native';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import { ModalContext } from '../context/ModalContext';
@@ -114,7 +114,11 @@ export default function CreateEditListScreen({ route, navigation }) {
   };
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 20 : 0}
+    >
       <View style={styles.headerRow}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={{marginRight: 15}}>
           <Ionicons name="close" size={28} color="#333" />
@@ -125,7 +129,11 @@ export default function CreateEditListScreen({ route, navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 20 }}>
+      <ScrollView
+        contentContainerStyle={{ padding: 20, paddingBottom: 120 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         {/* Image Picker */}
         <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
           {imageUri ? (
@@ -185,7 +193,7 @@ export default function CreateEditListScreen({ route, navigation }) {
            <Text style={{color: '#aaa', fontStyle: 'italic', marginBottom: 20}}>No items added yet. Click "+ Add Row" to start.</Text>
         )}
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
