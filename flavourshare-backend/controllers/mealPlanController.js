@@ -35,10 +35,20 @@ const uploadBanner = asyncHandler(async (req, res) => {
   }
 
   if (req.file) {
-    plan.bannerImage = getUploadedFileUrl(req, req.file) || plan.bannerImage;
-    await plan.save();
+    const bannerImage = getUploadedFileUrl(req, req.file);
+    if (!bannerImage) {
+      res.status(400);
+      throw new Error('Banner image upload failed');
+    }
+
+    await MealPlan.updateOne(
+      { _id: plan._id, user: req.user._id },
+      { $set: { bannerImage } },
+      { runValidators: false }
+    );
   }
 
+  plan = await MealPlan.findById(plan._id).populate('slots.recipe');
   res.json(plan);
 });
 
